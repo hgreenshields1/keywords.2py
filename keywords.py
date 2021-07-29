@@ -1,24 +1,41 @@
 # -*- coding: utf-8 -*-
 import string
 import re
-from spellchecker import SpellChecker
+
 from textblob import TextBlob
 from autocorrect import Speller
 
-keywords = ["our energy supply", "smart grids", "Smart grids", "a key enabler", "a more sustainable power system",
-            "real-time data gathering", "the intelligent control", "The aim", "a smart grid", "Yu", "Xue",
-            "the behaviours", "actions", "all the stakeholders", "the energy supply chain",
-            "sustainable, economic and secure electric energy", "economical and environmentally sustainable use",
-            "the inception", "smart meter systems", "peer"]
+keywords = ["biofabrication", "Biofabrication", "3D printing", "healthcare", "research", "3D printers", "their use",
+            "additive manufacturing", "The term", "'biofabrication", "the early 1990s", "academic publications",
+            "biomineralization bioengineering", "the term", "scope", "the marriage", "biology", "microfabrication",
+            "the automated generation", "biologically functional products", "plastics", "living cells", "molecules",
+            "living organisms", "bio-fabricated' meat", "bio-fabricated leather", "their use", "clinical healthcare",
+            "lives", "biomineralization bioengineering", "biology and microfabrication"]
 
 
 def NoPunctuation(words):
     noPunct = []
     for word in words:
-        noP = word.translate(str.maketrans('', '', string.punctuation))
-        # remove = dict.fromkeys(map(ord, '\n' + string.punctuation.replace('-', '')))
-        # noP = word.translate(remove)
-        noPunct.append(noP)
+        remove = dict.fromkeys(map(ord, '\n' + string.punctuation.replace('-', '')))
+        noP = word.translate(remove)
+
+        x = re.findall("- +", noP)
+        y = re.findall("^- ", noP)
+        z = re.findall(" -$", noP)
+        if y:
+            startDash = word.replace("- ", '')
+            startDash = startDash.strip()
+            noPunct.append(startDash)
+        elif z:
+            endDash = word.replace(" -", '')
+            endDash = endDash.strip()
+            noPunct.append(endDash)
+        elif x:
+            middleDash = word.replace(" - ", ' ')
+            middleDash = middleDash.strip()
+            noPunct.append(middleDash)
+        else:
+            noPunct.append(noP)
 
     return noPunct
 
@@ -96,15 +113,27 @@ def splitAnd(words):
 
 
 def autoCorrect(words):
-    # spell = SpellChecker()
     check = Speller(lang='en')
     corrected = []
     for word in words:
-        correct = check(word)
-        # correct = TextBlob(word)
-        # correct = str(correct.correct())
-        corrected.append(correct)
+        x = re.findall("-+", word)
+        if x:
+            isCorrect = 0
+            split = word.split("-")
+            for entity in split:
+                a = TextBlob(entity)
+                temp = str(a.correct())
+                if temp != entity:
+                    isCorrect = isCorrect + 1
 
+            if isCorrect > 0:
+                noDash = word.translate(str.maketrans('', '', string.punctuation))
+                correct = check(noDash)
+                corrected.append(correct)
+            else:
+                corrected.append(word)
+        else:
+            corrected.append(word)
     return corrected
 
 
